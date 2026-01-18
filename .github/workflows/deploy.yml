@@ -1,0 +1,56 @@
+name: Deploy with Docker Compose
+
+on:
+  push:
+    branches: [main]
+
+env:
+  DEPLOY_DIR: /root/amount-shipping-deploy
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    # test
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install SSH Key
+        uses: webfactory/ssh-agent@v0.7.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Copy project files to server
+        run: |
+          rsync -avz -e "ssh -o StrictHostKeyChecking=no -p ${{ secrets.SSH_PORT }}" ./ \
+            ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:$DEPLOY_DIR
+
+      - name: Create dir
+        run: |
+          ssh -o StrictHostKeyChecking=no -p ${{ secrets.SSH_PORT }} ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} <<EOF
+            mkdir -p $DEPLOY_DIR
+          EOF
+
+      - name: Create .env from secrets
+        run: |
+          ssh -o StrictHostKeyChecking=no -p ${{ secrets.SSH_PORT }} ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} <<EOF
+            cat <<EOT > $DEPLOY_DIR/.env
+          TOKEN=${{ secrets.TOKEN }}
+          ADMIN=${{ secrets.ADMIN }}
+          CDEK_LOGIN=${{ secrets.CDEK_LOGIN }}
+          CDEK_PASSWORD=${{ secrets.CDEK_PASSWORD }}
+          EOT
+          
+          chmod 600 $DEPLOY_DIR/.env
+          EOF
+
+      - name: Run Docker Compose
+        run: |
+          ssh -o StrictHostKeyChecking=no -p ${{ secrets.SSH_PORT }} ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} <<EOF
+            cd $DEPLOY_DIR
+          
+            # Удаляем конфликтующий контейнер, если он существует
+            docker rm -f amount-shipping-ci || true
+          
+            # Поднимаем сервис заново
+            docker compose up -d --build --remove-orphans --force-recreate
+          EOF
