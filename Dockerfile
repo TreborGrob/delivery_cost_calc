@@ -7,8 +7,8 @@ WORKDIR /amount_shipping
 
 # Устанавливаем зависимости
 COPY requirements.txt .
-RUN python.exe -m pip install --upgrade pip
-RUN python.exe -m pip install -r requirements.txt
+RUN pip install --upgrade pip
+RUN pip install -r requirements.txt
 
 # Копируем приложение
 COPY tg_bot/ tg_bot/
