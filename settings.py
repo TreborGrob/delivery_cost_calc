@@ -15,3 +15,5 @@ CDEK_PASSWORD = os.getenv("CDEK_PASSWORD")
 NAME_BOT = "amount_shipping"
 ADD_FOR_SUMM = 150
 CITY_DEFAULT = "Казань"
+CITY_DEFAULT_CODE = 424
+TARIFF_DEFAULT = 136  # склад-склад

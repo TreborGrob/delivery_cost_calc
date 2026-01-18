@@ -5,7 +5,7 @@ from aiogram import Router, F
 from aiogram.types import Message, CallbackQuery
 from aiogram.fsm.context import FSMContext
 
-from settings import ADD_FOR_SUMM
+from settings import ADD_FOR_SUMM, CITY_DEFAULT, CITY_DEFAULT_CODE, TARIFF_DEFAULT
 from tg_bot.markups_keyboards import cart_items_markup, cities_markup
 from tg_bot.resources import Buttons, ClothName
 from tg_bot.shipping.api_cdek import CDEKClient
@@ -60,10 +60,10 @@ async def calculation_shipping(callback: CallbackQuery, state: FSMContext, cdek_
             unit = FIRE_BOX
     calc = CalculatorRequest(
         type=1,
-        from_location=Location(code=424, city="Казань"),  # Казань
+        from_location=Location(code=CITY_DEFAULT_CODE, city=CITY_DEFAULT),
         to_location=Location(code=city_code),  # код города получателя
         packages=[Package(weight=unit.weight, length=unit.length, width=unit.width, height=unit.height)],
-        tariff_code=136  # Посылка склад-склад
+        tariff_code=TARIFF_DEFAULT
     )
     text_answer = ""
     result = await cdek_client.calculate_delivery(calc)
