@@ -10,49 +10,47 @@ env:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    # test
     steps:
       - uses: actions/checkout@v4
 
       - name: Install SSH Key
-        uses: webfactory/ssh-agent@v0.9.0 # Обновил до актуальной версии
+        uses: webfactory/ssh-agent@v0.9.0
         with:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
-      # 1. Сначала создаем папку, иначе rsync может выдать ошибку
-      - name: Create project directory
-        run: |
-          ssh -o StrictHostKeyChecking=no -p ${{ secrets.SSH_PORT }} ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "mkdir -p ${{ env.DEPLOY_DIR }}"
-
-      # 2. Копируем файлы (исключая лишнее, чтобы не забить диск сервера)
       - name: Copy project files to server
         run: |
-          rsync -avz --delete -e "ssh -o StrictHostKeyChecking=no -p ${{ secrets.SSH_PORT }}" \
-            --exclude '.git*' \
-            --exclude '.env' \
-            ./ ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:${{ env.DEPLOY_DIR }}/
+          rsync -avz -e "ssh -o StrictHostKeyChecking=no -p ${{ secrets.SSH_PORT }}" ./ \
+            ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:$DEPLOY_DIR
 
-      # 3. Создаем .env и запускаем docker compose
-      - name: Deploy on server
+      - name: Create dir
         run: |
           ssh -o StrictHostKeyChecking=no -p ${{ secrets.SSH_PORT }} ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} <<EOF
-            cd ${{ env.DEPLOY_DIR }}
-            
-            # Пишем .env
-            cat <<EOT > .env
-            TOKEN=${{ secrets.TOKEN }}
-            ADMIN=${{ secrets.ADMIN }}
-            CDEK_LOGIN=${{ secrets.CDEK_LOGIN }}
-            CDEK_PASSWORD=${{ secrets.CDEK_PASSWORD }}
-            EOT
-            chmod 600 .env
+            mkdir -p $DEPLOY_DIR
+          EOF
 
-            # Очистка и запуск
-            # Проверяем наличие файла перед запуском, чтобы получить внятный лог в CI
-            if [ -f "docker-compose.yml" ]; then
-              docker compose down || true
-              docker compose up -d --build --remove-orphans
-            else
-              echo "Error: docker-compose.yml not found in ${{ env.DEPLOY_DIR }}"
-              exit 1
-            fi
+      - name: Create .env from secrets
+        run: |
+          ssh -o StrictHostKeyChecking=no -p ${{ secrets.SSH_PORT }} ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} <<EOF
+            cat <<EOT > $DEPLOY_DIR/.env
+          TOKEN=${{ secrets.TOKEN }}
+          ADMIN=${{ secrets.ADMIN }}
+          CDEK_LOGIN=${{ secrets.CDEK_LOGIN }}
+          CDEK_PASSWORD=${{ secrets.CDEK_PASSWORD }}
+          EOT
+          
+          chmod 600 $DEPLOY_DIR/.env
+          EOF
+
+      - name: Run Docker Compose
+        run: |
+          ssh -o StrictHostKeyChecking=no -p ${{ secrets.SSH_PORT }} ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} <<EOF
+            cd $DEPLOY_DIR
+          
+            # Удаляем конфликтующий контейнер, если он существует
+            docker rm -f amount-shipping-ci || true
+          
+            # Поднимаем сервис заново
+            docker compose up -d --build --remove-orphans --force-recreate
           EOF
