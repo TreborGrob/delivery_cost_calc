@@ -16,4 +16,5 @@ NAME_BOT = "amount_shipping"
 ADD_FOR_SUMM = 150
 CITY_DEFAULT = "Казань"
 CITY_DEFAULT_CODE = 424
-TARIFF_DEFAULT = 136  # склад-склад
+TARIFF_DEFAULT = 136  # посылка склад-склад
+TARIFF_WAREHOUSE_DOOR = 137   # посылка склад-дверь

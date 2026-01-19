@@ -1,7 +1,8 @@
 import aiohttp
 from typing import Optional, Dict, Any
 import msgspec
-from tg_bot.shipping.models import CalculatorRequest, Location, Package
+
+from tg_bot.shipping.models import CalculatorRequest
 
 
 class CDEKClient:
@@ -79,6 +80,16 @@ class CDEKClient:
             data=payload
         )
 
+    async def calculate_tariff_list(self, calc_data: CalculatorRequest) -> Dict[str, Any]:
+        """ Расчет по доступным тарифам. """
+        payload = msgspec.json.encode(calc_data)
+
+        return await self._request(
+            method="POST",
+            path="/v2/calculator/tarifflist",
+            data=payload
+        )
+
     async def location_by_name_city(self, city_name: str):
         """ Получаем локации по наименованию населённого пункта. """
         params = {
@@ -94,3 +105,30 @@ class CDEKClient:
         """Закрытие сессии."""
         if self._session:
             await self._session.close()
+
+
+# async def main_api():
+#     from settings import CITY_DEFAULT_CODE, CITY_DEFAULT, CDEK_LOGIN, CDEK_PASSWORD, TARIFF_DEFAULT
+#     from tg_bot.resources import ClothName
+#     from tg_bot.units.units import Cloth
+#     from tg_bot.shipping.models import Location, Package
+#
+#     cdek_client = CDEKClient(client_id=CDEK_LOGIN, client_secret=CDEK_PASSWORD, is_test=False)
+#     FIRE_BOX = Cloth(ClothName.FIRE_BOX_T_SHIRT.value, 500, 11, 20, 30)
+#     unit = FIRE_BOX
+#     city_code = 324
+#     calc = CalculatorRequest(
+#         type=1,
+#         from_location=Location(code=CITY_DEFAULT_CODE, city=CITY_DEFAULT),
+#         to_location=Location(code=city_code),  # код города получателя
+#         packages=[Package(weight=unit.weight, length=unit.length, width=unit.width, height=unit.height)],
+#         tariff_code=TARIFF_DEFAULT
+#     )
+#     res = await cdek_client.calculate_delivery(calc)
+#     print(res)
+#     await cdek_client.close()
+#
+#
+# if __name__ == "__main__":
+#     import asyncio
+#     asyncio.run(main_api())

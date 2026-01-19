@@ -6,11 +6,10 @@ from aiogram import Bot, Dispatcher
 from aiogram.client.default import DefaultBotProperties
 from aiogram.fsm.storage.memory import MemoryStorage
 
-import settings
+from settings import CDEK_LOGIN, CDEK_PASSWORD, TOKEN
 from tg_bot import commands, handlers
 from tg_bot.log_work import setup_logging
 from tg_bot.send_message_bot import send_report_admin
-from settings import TOKEN
 from tg_bot.shipping.api_cdek import CDEKClient
 
 
@@ -32,7 +31,7 @@ async def main():
     await bot.delete_webhook(drop_pending_updates=True)
 
     # Сессия для запросов
-    cdek_client = CDEKClient(client_id=settings.CDEK_LOGIN, client_secret=settings.CDEK_PASSWORD, is_test=False)
+    cdek_client = CDEKClient(client_id=CDEK_LOGIN, client_secret=CDEK_PASSWORD, is_test=False)
 
     dp["cdek_client"] = cdek_client
 

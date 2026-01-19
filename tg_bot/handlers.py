@@ -5,9 +5,9 @@ from aiogram import Router, F
 from aiogram.types import Message, CallbackQuery
 from aiogram.fsm.context import FSMContext
 
-from settings import ADD_FOR_SUMM, CITY_DEFAULT, CITY_DEFAULT_CODE, TARIFF_DEFAULT
+from settings import ADD_FOR_SUMM, CITY_DEFAULT, CITY_DEFAULT_CODE, TARIFF_DEFAULT, TARIFF_WAREHOUSE_DOOR
 from tg_bot.markups_keyboards import cart_items_markup, cities_markup
-from tg_bot.resources import Buttons, ClothName
+from tg_bot.resources import FormatTextTags, ClothName, TariffIdName
 from tg_bot.shipping.api_cdek import CDEKClient
 from tg_bot.shipping.models import CalculatorRequest, Location, Package, City
 from tg_bot.units.units import Cloth
@@ -67,11 +67,16 @@ async def calculation_shipping(callback: CallbackQuery, state: FSMContext, cdek_
     )
     text_answer = ""
     result = await cdek_client.calculate_delivery(calc)
+    if "errors" in result:
+        calc.tariff_code = TARIFF_WAREHOUSE_DOOR
+        result = await cdek_client.calculate_delivery(calc)
+    tariff_name: str = TariffIdName.get(calc.tariff_code)
     if "delivery_sum" in result:
         total_sum = int(result['delivery_sum'])+ADD_FOR_SUMM
-        text_answer += (f"Стоимость: {Buttons.CODE_OPEN_TAG}{total_sum} руб.{Buttons.CODE_CLOSE_TAG}\n"
-                        f"Срок: {Buttons.CODE_OPEN_TAG}{result['period_min']}-{result['period_max']} дн."
-                        f"{Buttons.CODE_CLOSE_TAG}")
+        text_answer += (f"Тариф: {FormatTextTags.STRONG_OPEN_TAG}{tariff_name}{FormatTextTags.STRONG_CLOSE_TAG}\n"
+                        f"Стоимость: {FormatTextTags.CODE_OPEN_TAG}{total_sum} руб.{FormatTextTags.CODE_CLOSE_TAG}\n"
+                        f"Срок: {FormatTextTags.CODE_OPEN_TAG}{result['period_min']}-{result['period_max']} дн."
+                        f"{FormatTextTags.CODE_CLOSE_TAG}")
     else:
         if "errors" in result:
             error_message = result["errors"][0].get("message")
