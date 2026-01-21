@@ -1,3 +1,4 @@
+import logging
 from typing import List
 
 import msgspec
@@ -66,20 +67,24 @@ async def calculation_shipping(callback: CallbackQuery, state: FSMContext, cdek_
         tariff_code=TARIFF_DEFAULT
     )
     text_answer = ""
-    result = await cdek_client.calculate_delivery(calc)
-    if "errors" in result:
-        calc.tariff_code = TARIFF_WAREHOUSE_DOOR
+    try:
         result = await cdek_client.calculate_delivery(calc)
-    tariff_name: str = TariffIdName.get(calc.tariff_code)
-    if "delivery_sum" in result:
-        total_sum = int(result['delivery_sum'])+ADD_FOR_SUMM
-        text_answer += (f"Тариф: {FormatTextTags.STRONG_OPEN_TAG}{tariff_name}{FormatTextTags.STRONG_CLOSE_TAG}\n"
-                        f"Стоимость: {FormatTextTags.CODE_OPEN_TAG}{total_sum} руб.{FormatTextTags.CODE_CLOSE_TAG}\n"
-                        f"Срок: {FormatTextTags.CODE_OPEN_TAG}{result['period_min']}-{result['period_max']} дн."
-                        f"{FormatTextTags.CODE_CLOSE_TAG}")
-    else:
         if "errors" in result:
-            error_message = result["errors"][0].get("message")
-            text_answer += f"Ошибка: {error_message}"
+            calc.tariff_code = TARIFF_WAREHOUSE_DOOR
+            result = await cdek_client.calculate_delivery(calc)
+        tariff_name: str = TariffIdName.get(calc.tariff_code)
+        if "delivery_sum" in result:
+            total_sum = int(result['delivery_sum'])+ADD_FOR_SUMM
+            text_answer += (f"Тариф: {FormatTextTags.STRONG_OPEN_TAG}{tariff_name}{FormatTextTags.STRONG_CLOSE_TAG}\n"
+                            f"Стоимость: {FormatTextTags.CODE_OPEN_TAG}{total_sum} руб.{FormatTextTags.CODE_CLOSE_TAG}\n"
+                            f"Срок: {FormatTextTags.CODE_OPEN_TAG}{result['period_min']}-{result['period_max']} дн."
+                            f"{FormatTextTags.CODE_CLOSE_TAG}")
+        else:
+            if "errors" in result:
+                error_message = result["errors"][0].get("message")
+                text_answer += f"Ошибка: {error_message}"
+    except Exception as e:
+        text_answer = "Произошла ошибка при связи со СДЭК. Повторите попытку позже."
+        logging.info(e)
     await callback.message.edit_text(text_answer)
     await state.clear()

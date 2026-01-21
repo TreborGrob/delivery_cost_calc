@@ -20,8 +20,9 @@ class CDEKClient:
 
     async def _get_session(self) -> aiohttp.ClientSession:
         """Создает сессию, если она еще не создана."""
+        timeout = aiohttp.ClientTimeout(total=5)
         if self._session is None or self._session.closed:
-            self._session = aiohttp.ClientSession()
+            self._session = aiohttp.ClientSession(timeout=timeout)
         return self._session
 
     async def _get_token(self):
@@ -67,6 +68,9 @@ class CDEKClient:
             if resp.status == 401:
                 self._token = None
                 return await self._request(method, path, data, params)
+            if "application/json" not in resp.headers.get("Content-Type", ""):
+                text = await resp.text()
+                return {"error": "Invalid response type", "status": resp.status, "text": text[:100]}
 
             return await resp.json()
 
@@ -107,28 +111,30 @@ class CDEKClient:
             await self._session.close()
 
 
-# async def main_api():
-#     from settings import CITY_DEFAULT_CODE, CITY_DEFAULT, CDEK_LOGIN, CDEK_PASSWORD, TARIFF_DEFAULT
-#     from tg_bot.resources import ClothName
-#     from tg_bot.units.units import Cloth
-#     from tg_bot.shipping.models import Location, Package
-#
-#     cdek_client = CDEKClient(client_id=CDEK_LOGIN, client_secret=CDEK_PASSWORD, is_test=False)
-#     FIRE_BOX = Cloth(ClothName.FIRE_BOX_T_SHIRT.value, 500, 11, 20, 30)
-#     unit = FIRE_BOX
-#     city_code = 324
-#     calc = CalculatorRequest(
-#         type=1,
-#         from_location=Location(code=CITY_DEFAULT_CODE, city=CITY_DEFAULT),
-#         to_location=Location(code=city_code),  # код города получателя
-#         packages=[Package(weight=unit.weight, length=unit.length, width=unit.width, height=unit.height)],
-#         tariff_code=TARIFF_DEFAULT
-#     )
-#     res = await cdek_client.calculate_delivery(calc)
-#     print(res)
-#     await cdek_client.close()
-#
-#
-# if __name__ == "__main__":
-#     import asyncio
-#     asyncio.run(main_api())
+async def main_api():
+    from settings import CITY_DEFAULT_CODE, CITY_DEFAULT, CDEK_LOGIN, CDEK_PASSWORD, TARIFF_DEFAULT
+    from tg_bot.resources import ClothName
+    from tg_bot.units.units import Cloth
+    from tg_bot.shipping.models import Location, Package
+
+    cdek_client = CDEKClient(client_id=CDEK_LOGIN, client_secret=CDEK_PASSWORD, is_test=False)
+    FIRE_BOX = Cloth(ClothName.FIRE_BOX_T_SHIRT.value, 500, 11, 20, 30)
+    unit = FIRE_BOX
+    city_code = 324
+    calc = CalculatorRequest(
+        type=1,
+        from_location=Location(code=CITY_DEFAULT_CODE, city=CITY_DEFAULT),
+        to_location=Location(code=city_code),  # код города получателя
+        packages=[Package(weight=unit.weight, length=unit.length, width=unit.width, height=unit.height)],
+        tariff_code=TARIFF_DEFAULT
+    )
+    try:
+        res = await cdek_client.calculate_delivery(calc)
+        print(res)
+    finally:
+        await cdek_client.close()
+
+
+if __name__ == "__main__":
+    import asyncio
+    asyncio.run(main_api())
