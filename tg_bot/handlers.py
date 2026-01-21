@@ -70,33 +70,32 @@ async def calculation_shipping(callback: CallbackQuery, state: FSMContext, cdek_
     try:
         result = await cdek_client.calculate_delivery(calc)
 
-        # Если тариф не подошел, пробуем второй тариф
+        # Если тарифа нет
         if "errors" in result:
             calc.tariff_code = TARIFF_WAREHOUSE_DOOR
             result = await cdek_client.calculate_delivery(calc)
 
     except Exception as e:
-        # Если API СДЭК выдало 502/503 или вообще недоступно
+        # Если API СДЭК выдало 502/503
         await callback.message.edit_text("Сервис СДЭК временно недоступен. Попробуйте позже.")
         logging.info(e)
         await state.clear()
-        return  # Выходим из функции
+        return
 
-    # Теперь проверяем результат (после всех попыток)
     if "delivery_sum" in result:
-        tariff_name = TariffIdName.get(calc.tariff_code, "Стандартный")
+        tariff_name = TariffIdName.get(calc.tariff_code)
         total_sum = int(result['delivery_sum']) + ADD_FOR_SUMM
         text_answer = (
-            f"Тариф: <b>{tariff_name}</b>\n"
-            f"Стоимость: <code>{total_sum} руб.</code>\n"
-            f"Срок: <code>{result['period_min']}-{result['period_max']} дн.</code>"
+            f"Тариф: {FormatTextTags.STRONG_OPEN_TAG}{tariff_name}{FormatTextTags.STRONG_CLOSE_TAG}\n"
+            f"Стоимость: {FormatTextTags.CODE_OPEN_TAG}{total_sum} руб.{FormatTextTags.CODE_CLOSE_TAG}\n"
+            f"Срок: {FormatTextTags.CODE_OPEN_TAG}{result['period_min']}-{result['period_max']} дн."
+            f"{FormatTextTags.CODE_CLOSE_TAG}"
         )
     elif "errors" in result:
         # Если СДЭК ответил, но сообщил об ошибке (например, город не найден)
         error_message = result["errors"][0].get("message", "Неизвестная ошибка")
         text_answer = f"Ошибка СДЭК: {error_message}"
     else:
-        # На случай странных ответов
         text_answer = "Не удалось рассчитать стоимость. Проверьте данные."
 
     await callback.message.edit_text(text_answer)
