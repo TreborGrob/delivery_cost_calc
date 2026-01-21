@@ -111,30 +111,30 @@ class CDEKClient:
             await self._session.close()
 
 
-async def main_api():
-    from settings import CITY_DEFAULT_CODE, CITY_DEFAULT, CDEK_LOGIN, CDEK_PASSWORD, TARIFF_DEFAULT
-    from tg_bot.resources import ClothName
-    from tg_bot.units.units import Cloth
-    from tg_bot.shipping.models import Location, Package
-
-    cdek_client = CDEKClient(client_id=CDEK_LOGIN, client_secret=CDEK_PASSWORD, is_test=False)
-    FIRE_BOX = Cloth(ClothName.FIRE_BOX_T_SHIRT.value, 500, 11, 20, 30)
-    unit = FIRE_BOX
-    city_code = 324
-    calc = CalculatorRequest(
-        type=1,
-        from_location=Location(code=CITY_DEFAULT_CODE, city=CITY_DEFAULT),
-        to_location=Location(code=city_code),  # код города получателя
-        packages=[Package(weight=unit.weight, length=unit.length, width=unit.width, height=unit.height)],
-        tariff_code=TARIFF_DEFAULT
-    )
-    try:
-        res = await cdek_client.calculate_delivery(calc)
-        print(res)
-    finally:
-        await cdek_client.close()
-
-
-if __name__ == "__main__":
-    import asyncio
-    asyncio.run(main_api())
+# async def main_api():
+#     from settings import CITY_DEFAULT_CODE, CITY_DEFAULT, CDEK_LOGIN, CDEK_PASSWORD, TARIFF_DEFAULT
+#     from tg_bot.resources import ClothName
+#     from tg_bot.units.units import Cloth
+#     from tg_bot.shipping.models import Location, Package
+#
+#     cdek_client = CDEKClient(client_id=CDEK_LOGIN, client_secret=CDEK_PASSWORD, is_test=False)
+#     FIRE_BOX = Cloth(ClothName.FIRE_BOX_T_SHIRT.value, 500, 11, 20, 30)
+#     unit = FIRE_BOX
+#     city_code = 324
+#     calc = CalculatorRequest(
+#         type=1,
+#         from_location=Location(code=CITY_DEFAULT_CODE, city=CITY_DEFAULT),
+#         to_location=Location(code=city_code),  # код города получателя
+#         packages=[Package(weight=unit.weight, length=unit.length, width=unit.width, height=unit.height)],
+#         tariff_code=TARIFF_DEFAULT
+#     )
+#     try:
+#         res = await cdek_client.calculate_delivery(calc)
+#         print(res)
+#     finally:
+#         await cdek_client.close()
+#
+#
+# if __name__ == "__main__":
+#     import asyncio
+#     asyncio.run(main_api())

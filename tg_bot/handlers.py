@@ -66,25 +66,38 @@ async def calculation_shipping(callback: CallbackQuery, state: FSMContext, cdek_
         packages=[Package(weight=unit.weight, length=unit.length, width=unit.width, height=unit.height)],
         tariff_code=TARIFF_DEFAULT
     )
-    text_answer = ""
+
     try:
         result = await cdek_client.calculate_delivery(calc)
+
+        # Если тариф не подошел, пробуем второй тариф
         if "errors" in result:
             calc.tariff_code = TARIFF_WAREHOUSE_DOOR
             result = await cdek_client.calculate_delivery(calc)
-        tariff_name: str = TariffIdName.get(calc.tariff_code)
-        if "delivery_sum" in result:
-            total_sum = int(result['delivery_sum'])+ADD_FOR_SUMM
-            text_answer += (f"Тариф: {FormatTextTags.STRONG_OPEN_TAG}{tariff_name}{FormatTextTags.STRONG_CLOSE_TAG}\n"
-                            f"Стоимость: {FormatTextTags.CODE_OPEN_TAG}{total_sum} руб.{FormatTextTags.CODE_CLOSE_TAG}\n"
-                            f"Срок: {FormatTextTags.CODE_OPEN_TAG}{result['period_min']}-{result['period_max']} дн."
-                            f"{FormatTextTags.CODE_CLOSE_TAG}")
-        else:
-            if "errors" in result:
-                error_message = result["errors"][0].get("message")
-                text_answer += f"Ошибка: {error_message}"
+
     except Exception as e:
-        text_answer = "Произошла ошибка при связи со СДЭК. Повторите попытку позже."
+        # Если API СДЭК выдало 502/503 или вообще недоступно
+        await callback.message.edit_text("Сервис СДЭК временно недоступен. Попробуйте позже.")
         logging.info(e)
+        await state.clear()
+        return  # Выходим из функции
+
+    # Теперь проверяем результат (после всех попыток)
+    if "delivery_sum" in result:
+        tariff_name = TariffIdName.get(calc.tariff_code, "Стандартный")
+        total_sum = int(result['delivery_sum']) + ADD_FOR_SUMM
+        text_answer = (
+            f"Тариф: <b>{tariff_name}</b>\n"
+            f"Стоимость: <code>{total_sum} руб.</code>\n"
+            f"Срок: <code>{result['period_min']}-{result['period_max']} дн.</code>"
+        )
+    elif "errors" in result:
+        # Если СДЭК ответил, но сообщил об ошибке (например, город не найден)
+        error_message = result["errors"][0].get("message", "Неизвестная ошибка")
+        text_answer = f"Ошибка СДЭК: {error_message}"
+    else:
+        # На случай странных ответов
+        text_answer = "Не удалось рассчитать стоимость. Проверьте данные."
+
     await callback.message.edit_text(text_answer)
     await state.clear()
