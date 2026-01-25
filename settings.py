@@ -18,3 +18,4 @@ CITY_DEFAULT = "Казань"
 CITY_DEFAULT_CODE = 424
 TARIFF_DEFAULT = 136  # посылка склад-склад
 TARIFF_WAREHOUSE_DOOR = 137   # посылка склад-дверь
+TARIFF_ECONOM = 0   # экономичная посылка склад-склад

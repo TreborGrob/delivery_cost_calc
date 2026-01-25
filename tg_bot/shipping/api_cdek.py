@@ -120,17 +120,24 @@ class CDEKClient:
 #     cdek_client = CDEKClient(client_id=CDEK_LOGIN, client_secret=CDEK_PASSWORD, is_test=False)
 #     FIRE_BOX = Cloth(ClothName.FIRE_BOX_T_SHIRT.value, 500, 11, 20, 30)
 #     unit = FIRE_BOX
-#     city_code = 324
+#     city_code = 231
 #     calc = CalculatorRequest(
 #         type=1,
 #         from_location=Location(code=CITY_DEFAULT_CODE, city=CITY_DEFAULT),
 #         to_location=Location(code=city_code),  # код города получателя
-#         packages=[Package(weight=unit.weight, length=unit.length, width=unit.width, height=unit.height)],
-#         tariff_code=TARIFF_DEFAULT
+#         packages=[Package(weight=unit.weight, length=unit.length, width=unit.width, height=unit.height)]
 #     )
 #     try:
-#         res = await cdek_client.calculate_delivery(calc)
-#         print(res)
+#         location_data = await cdek_client.location_by_name_city("Чита")
+#         print(location_data)
+#         tariff_codes = await cdek_client.calculate_tariff_list(calc)
+#         for tariff in tariff_codes.get("tariff_codes"):
+#             print(tariff)
+#         for tariff in tariff_codes.get("tariff_codes"):
+#             code_tariff = tariff.get("tariff_code")
+#             tariff_name = tariff.get("tariff_name")
+#             tariff_description = tariff.get("tariff_description")
+#             print(f"{code_tariff} - {tariff_name} - {tariff_description}")
 #     finally:
 #         await cdek_client.close()
 #

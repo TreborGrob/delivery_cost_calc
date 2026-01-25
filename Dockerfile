@@ -10,7 +10,7 @@ COPY requirements.txt .
 RUN pip install --upgrade pip
 RUN pip install -r requirements.txt
 
-# Копируем приложение
+# Копируем приложениеgit pul
 COPY tg_bot/ tg_bot/
 COPY settings.py .
 COPY main.py .

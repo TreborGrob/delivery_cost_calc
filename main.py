@@ -35,6 +35,9 @@ async def main():
 
     dp["cdek_client"] = cdek_client
 
+    requests_users = dict()
+    dp["requests_users"] = requests_users
+
     try:
         await dp.start_polling(bot)
     finally:

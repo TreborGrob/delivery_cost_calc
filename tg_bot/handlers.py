@@ -38,14 +38,15 @@ async def get_city(message: Message, state: FSMContext, cdek_client: CDEKClient)
 
 
 @router.callback_query(F.data.startswith("city_"))
-async def specify_city(callback: CallbackQuery, state: FSMContext, cdek_client: CDEKClient):
+async def specify_city(callback: CallbackQuery, state: FSMContext):
     city_code = callback.data.replace("city_", "")
     await state.update_data(city_code=city_code)
     await callback.message.edit_text("Выбери посылку", reply_markup=await cart_items_markup())
 
 
 @router.callback_query(F.data.startswith("item_"))
-async def calculation_shipping(callback: CallbackQuery, state: FSMContext, cdek_client: CDEKClient):
+async def calculation_shipping(callback: CallbackQuery, state: FSMContext,
+                               cdek_client: CDEKClient, requests_users: dict):
     item = callback.data.replace("item_", "")
     data = await state.get_data()
     city_code = int(data.get("city_code"))
@@ -91,6 +92,16 @@ async def calculation_shipping(callback: CallbackQuery, state: FSMContext, cdek_
             f"Срок: {FormatTextTags.CODE_OPEN_TAG}{result['period_min']}-{result['period_max']} дн."
             f"{FormatTextTags.CODE_CLOSE_TAG}"
         )
+        user_tg_id = callback.from_user.id
+        user_nickname = callback.from_user.username
+        data_user = requests_users.get(user_tg_id, "")
+        if data_user:
+            data = data_user.split("_")
+            count = int(data[-1])
+        else:
+            count = 0
+        requests_users[user_tg_id] = f"{user_nickname}_{count + 1}"
+
     elif "errors" in result:
         # Если СДЭК ответил, но сообщил об ошибке (например, город не найден)
         error_message = result["errors"][0].get("message", "Неизвестная ошибка")

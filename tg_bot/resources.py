@@ -3,6 +3,8 @@ import enum
 
 class CommandsTitle(enum.Enum):
     START = "start"
+    REPORT = "report"
+    REPORT_CLEAR = "report_clear"
 
 
 class FormatTextTags:
